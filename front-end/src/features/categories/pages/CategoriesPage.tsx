@@ -1,3 +1,4 @@
+import Select from '../../../shared/components/Select.tsx'
 import { useCallback, useState } from 'react'
 import {
   ConfirmDeactivateDialog,
@@ -6,6 +7,7 @@ import {
   CrudRowActions,
   CrudToolbar,
 } from '../../../shared/components/CrudPageLayout.tsx'
+import { crudFilterClassName } from '../../../shared/components/crudStyles.ts'
 import { useCrudPage } from '../../../shared/hooks/useCrudPage.ts'
 import {
   CATEGORY_TYPES,
@@ -29,10 +31,10 @@ export default function CategoriesPage() {
     createItem: categoryApi.create,
     updateItem: categoryApi.update,
     deactivateItem: categoryApi.deactivate,
-    loadErrorMessage: 'Không thể tải danh sách danh mục.',
-    deactivateErrorMessage: 'Không thể ngưng dùng danh mục.',
+    loadErrorMessage: 'Unable to load categories.',
+    deactivateErrorMessage: 'Unable to deactivate this category.',
     conflictField: 'code',
-    conflictDefaultMessage: 'Mã danh mục đã tồn tại.',
+    conflictDefaultMessage: 'This category code already exists.',
   })
 
   const filtered = crud.items.filter((item) => {
@@ -62,11 +64,11 @@ export default function CategoriesPage() {
         resultCount={filtered.length}
         error={crud.error}
         extraFilters={
-          <select
+          <Select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             aria-label="Filter by type"
-            className="!min-h-[38px] !w-auto !rounded-full !px-4 !py-1.5 !bg-[#121212] !border-[#292929] !text-sm !text-[#e5e5e5]"
+            className={crudFilterClassName}
           >
             <option value="">All types</option>
             {Object.entries(CATEGORY_TYPES).map(([code, label]) => (
@@ -74,7 +76,7 @@ export default function CategoriesPage() {
                 {label} ({code})
               </option>
             ))}
-          </select>
+          </Select>
         }
       />
 
@@ -160,9 +162,9 @@ export default function CategoriesPage() {
       >
         <div>
           <label htmlFor="category-type" className="field-label">
-            Loại danh mục *
+            Category type *
           </label>
-          <select
+          <Select
             id="category-type"
             name="type"
             defaultValue={crud.editingItem?.type || 'DOC_TYPE'}
@@ -174,7 +176,7 @@ export default function CategoriesPage() {
                 {label} ({code})
               </option>
             ))}
-          </select>
+          </Select>
           {crud.modalErrors.type && (
             <div className="field-error">{crud.modalErrors.type}</div>
           )}
@@ -182,7 +184,7 @@ export default function CategoriesPage() {
 
         <div>
           <label htmlFor="category-code" className="field-label">
-            Mã danh mục (Code) *
+            Category code *
           </label>
           <input
             id="category-code"
@@ -202,7 +204,7 @@ export default function CategoriesPage() {
 
         <div>
           <label htmlFor="category-name" className="field-label">
-            Tên danh mục (Name) *
+            Category name *
           </label>
           <input
             id="category-name"
@@ -211,7 +213,7 @@ export default function CategoriesPage() {
             defaultValue={crud.editingItem?.name || ''}
             required
             maxLength={255}
-            placeholder="VD: Quyết định, Công văn..."
+            placeholder="e.g. Decision, Correspondence…"
             aria-invalid={Boolean(crud.modalErrors.name) || undefined}
           />
           {crud.modalErrors.name && (
@@ -221,7 +223,7 @@ export default function CategoriesPage() {
 
         <div>
           <label htmlFor="category-symbol" className="field-label">
-            Ký hiệu (Symbol)
+            Symbol
           </label>
           <input
             id="category-symbol"
@@ -229,7 +231,7 @@ export default function CategoriesPage() {
             type="text"
             defaultValue={crud.editingItem?.symbol || ''}
             maxLength={20}
-            placeholder="VD: QĐ, K, M..."
+            placeholder="e.g. DEC, K, M…"
             className="font-mono"
           />
         </div>
@@ -238,21 +240,21 @@ export default function CategoriesPage() {
       <ConfirmDeactivateDialog
         confirmModalRef={crud.confirmModalRef}
         confirmTitleId={crud.confirmTitleId}
-        title="Ngưng dùng danh mục"
+        title="Deactivate category"
         errorMessage={crud.deactivateError}
         submitting={crud.submitting}
         onClose={crud.closeConfirmModal}
         onConfirm={crud.handleConfirmDeactivate}
         description={
           <>
-            Bạn có chắc chắn muốn ngưng dùng danh mục{' '}
+            Are you sure you want to deactivate the category{' '}
             <strong className="text-white font-mono">
               {crud.deactivatingItem?.name}
             </strong>{' '}
-            (mã:{' '}
+            (code:{' '}
             <code className="text-white">{crud.deactivatingItem?.code}</code>)?
-            Danh mục sau khi ngưng dùng sẽ không xuất hiện trong các dropdown
-            tạo mới.
+            A deactivated category no longer appears in the dropdowns used to
+            create new records.
           </>
         }
       />

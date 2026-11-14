@@ -1,6 +1,14 @@
+import Select from './Select.tsx'
 import type { FormEvent, ReactNode, RefObject } from 'react'
 import Button from './Button.tsx'
-import { CloseIcon, DeactivateIcon, EditIcon, SearchIcon } from './Icons.tsx'
+import {
+  CloseIcon,
+  DeactivateIcon,
+  EditIcon,
+  ReactivateIcon,
+  SearchIcon,
+} from './Icons.tsx'
+import { crudFilterClassName, crudRowIconClassName } from './crudStyles.ts'
 
 export interface CrudHeaderProps {
   title: string
@@ -23,58 +31,78 @@ export function CrudHeader({ title, createLabel, onCreate }: CrudHeaderProps) {
   )
 }
 
+const defaultStatusOptions = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'active', label: 'Active only' },
+]
+
 export interface CrudToolbarProps {
-  search: string
-  onSearchChange: (value: string) => void
-  searchAriaLabel: string
+  /** Omit `onSearchChange` to hide the search box (e.g. the API has no keyword search). */
+  search?: string
+  onSearchChange?: (value: string) => void
+  searchAriaLabel?: string
   statusFilter: string
   onStatusFilterChange: (value: string) => void
+  statusOptions?: { value: string; label: string }[]
   resultCount: number
+  resultNoun?: [singular: string, plural: string]
   error?: string
   extraFilters?: ReactNode
+  /** Rendered after the status filter, e.g. a "Clear filters" button. */
+  actions?: ReactNode
 }
 
 export function CrudToolbar({
-  search,
+  search = '',
   onSearchChange,
   searchAriaLabel,
   statusFilter,
   onStatusFilterChange,
+  statusOptions = defaultStatusOptions,
   resultCount,
+  resultNoun = ['result', 'results'],
   error,
   extraFilters,
+  actions,
 }: CrudToolbarProps) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="relative flex-1 min-w-[220px] max-w-[320px]">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8e8e8e] pointer-events-none">
-            <SearchIcon />
-          </span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search..."
-            aria-label={searchAriaLabel}
-            className="!min-h-[38px] !rounded-full !pl-10 !pr-4 !py-1.5 !bg-[#121212] !border-[#292929] !text-sm placeholder:!text-[#8e8e8e]"
-          />
-        </div>
+        {onSearchChange && (
+          <div className="relative flex-1 min-w-[220px] max-w-[320px]">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8e8e8e] pointer-events-none">
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search..."
+              aria-label={searchAriaLabel}
+              className="!min-h-[38px] !rounded-full !pl-10 !pr-4 !py-1.5 !bg-[#121212] !border-[#292929] !text-sm placeholder:!text-[#8e8e8e]"
+            />
+          </div>
+        )}
 
         {extraFilters}
 
-        <select
+        <Select
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value)}
           aria-label="Filter by status"
-          className="!min-h-[38px] !w-auto !rounded-full !px-4 !py-1.5 !bg-[#121212] !border-[#292929] !text-sm !text-[#e5e5e5]"
+          className={crudFilterClassName}
         >
-          <option value="all">All statuses</option>
-          <option value="active">Active only</option>
-        </select>
+          {statusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
 
-        <span className="text-sm text-[#8e8e8e] ml-2">
-          {resultCount} {resultCount === 1 ? 'result' : 'results'}
+        {actions}
+
+        <span className="text-sm text-[#8e8e8e] ml-2" role="status">
+          {resultCount} {resultCount === 1 ? resultNoun[0] : resultNoun[1]}
         </span>
       </div>
 
@@ -92,6 +120,12 @@ export interface CrudRowActionsProps {
   isActive: boolean
   onEdit: () => void
   onDeactivate: () => void
+  /** Shows a reactivate button on inactive rows when given. */
+  onReactivate?: () => void
+  /** Disables deactivate/reactivate and shows this text as the tooltip. */
+  statusDisabledReason?: string
+  /** Extra icon actions rendered after the built-in ones. */
+  children?: ReactNode
 }
 
 export function CrudRowActions({
@@ -99,27 +133,36 @@ export function CrudRowActions({
   isActive,
   onEdit,
   onDeactivate,
+  onReactivate,
+  statusDisabledReason,
+  children,
 }: CrudRowActionsProps) {
+  const editLabel = `Edit ${itemName}`
+  const statusLabel = `${isActive ? 'Deactivate' : 'Reactivate'} ${itemName}`
   return (
-    <div className="inline-flex items-center justify-end gap-1">
+    <div className="inline-flex items-center justify-end gap-1 align-middle">
       <Button
         variant="icon"
-        aria-label={`Edit ${itemName}`}
+        aria-label={editLabel}
+        title={editLabel}
         onClick={onEdit}
-        className="!w-8 !h-8 !rounded-lg text-[#dedede] hover:text-white"
+        className={crudRowIconClassName}
       >
         <EditIcon />
       </Button>
-      {isActive && (
+      {(isActive || onReactivate) && (
         <Button
           variant="icon"
-          aria-label={`Deactivate ${itemName}`}
-          onClick={onDeactivate}
-          className="!w-8 !h-8 !rounded-lg button--danger-icon"
+          aria-label={statusLabel}
+          title={statusDisabledReason ?? statusLabel}
+          disabled={Boolean(statusDisabledReason)}
+          onClick={isActive ? onDeactivate : onReactivate}
+          className={`${crudRowIconClassName} ${isActive ? 'row-action--danger' : ''}`}
         >
-          <DeactivateIcon />
+          {isActive ? <DeactivateIcon /> : <ReactivateIcon />}
         </Button>
       )}
+      {children}
     </div>
   )
 }

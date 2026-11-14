@@ -70,14 +70,22 @@ export default function AccountPage({ mode }: { mode: AccountPageMode }) {
           },
           controller.signal,
         )
-        await auth.logout()
+        await auth.logout('passwordChanged')
       }
       form.reset()
     } catch (error) {
       if (controller.signal.aborted) return
       const data = axios.isAxiosError(error) ? error.response?.data : undefined
+      const status = axios.isAxiosError(error)
+        ? error.response?.status
+        : undefined
       setErrors(data?.fieldErrors || {})
-      setMessage(data?.message || 'Unable to connect. Please try again.')
+      setMessage(
+        // auth-service answers a deactivated account with "Account has been unactivated!"
+        mode === 'login' && status === 403
+          ? 'This account has been deactivated. Please contact an administrator.'
+          : data?.message || 'Unable to connect. Please try again.',
+      )
     } finally {
       busy.current = false
       if (!controller.signal.aborted) setPending(false)
@@ -103,6 +111,20 @@ export default function AccountPage({ mode }: { mode: AccountPageMode }) {
       <h1 id="account-title" className="mt-3 text-2xl">
         {title}
       </h1>
+      {mode === 'login' &&
+        ((location.state as { notice?: string } | null)?.notice ??
+          auth.sessionNotice) === 'expired' && (
+          <p role="alert" className="mt-4">
+            Your session has expired. Please log in again.
+          </p>
+        )}
+      {mode === 'login' &&
+        ((location.state as { notice?: string } | null)?.notice ??
+          auth.sessionNotice) === 'passwordChanged' && (
+          <p role="status" className="mt-4">
+            Password changed successfully. Please log in again.
+          </p>
+        )}
       <form
         ref={formRef}
         onSubmit={submit}

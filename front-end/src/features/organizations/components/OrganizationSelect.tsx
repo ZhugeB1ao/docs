@@ -1,3 +1,4 @@
+import Select from '../../../shared/components/Select.tsx'
 import { useEffect, useState, type SelectHTMLAttributes } from 'react'
 import {
   organizationApi,
@@ -14,7 +15,7 @@ export interface OrganizationSelectProps extends Omit<
 
 export default function OrganizationSelect({
   items: externalItems,
-  placeholder = '— Chọn cơ quan ngoài —',
+  placeholder = '— Select an external organization —',
   defaultValue,
   value,
   ...rest
@@ -36,13 +37,13 @@ export default function OrganizationSelect({
   const rows = (externalItems ?? fetchedItems).filter((item) => item.isActive)
 
   return (
-    <select defaultValue={defaultValue} value={value} {...rest}>
+    <Select defaultValue={defaultValue} value={value} {...rest}>
       <option value="">{placeholder}</option>
       {rows.map((item) => (
         <option key={item.id} value={String(item.id)}>
           {item.name}
         </option>
       ))}
-    </select>
+    </Select>
   )
 }
