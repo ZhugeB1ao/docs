@@ -7,6 +7,7 @@ import {
   CrudRowActions,
   CrudToolbar,
 } from '../../../shared/components/CrudPageLayout.tsx'
+import { crudFilterClassName } from '../../../shared/components/crudStyles.ts'
 import { useCrudPage } from '../../../shared/hooks/useCrudPage.ts'
 import {
   CATEGORY_TYPES,
@@ -67,7 +68,7 @@ export default function CategoriesPage() {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             aria-label="Filter by type"
-            className="!min-h-[38px] !w-auto !rounded-full !px-4 !py-1.5 !bg-[#121212] !border-[#292929] !text-sm !text-[#e5e5e5]"
+            className={crudFilterClassName}
           >
             <option value="">All types</option>
             {Object.entries(CATEGORY_TYPES).map(([code, label]) => (

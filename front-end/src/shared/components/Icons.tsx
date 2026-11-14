@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 export interface IconProps {
   className?: string
 }
@@ -56,7 +58,8 @@ export function SearchIcon({ className }: IconProps = {}) {
   )
 }
 
-export function EditIcon() {
+/** Shared frame for row action icons: 16px, 24 grid, stroke 1.75. */
+function RowIcon({ children }: { children: ReactNode }) {
   return (
     <svg
       width="16"
@@ -64,36 +67,50 @@ export function EditIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      {children}
     </svg>
   )
 }
 
+export function EditIcon() {
+  return (
+    <RowIcon>
+      <path d="M21.17 6.81a2.83 2.83 0 0 0-4-4L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5Z" />
+      <path d="m15 5 4 4" />
+    </RowIcon>
+  )
+}
+
+/** "Ban" sign: deactivate is reversible, so it must not look like delete. */
 export function DeactivateIcon() {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-      <line x1="10" x2="10" y1="11" y2="17" />
-      <line x1="14" x2="14" y1="11" y2="17" />
-    </svg>
+    <RowIcon>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m5.6 5.6 12.8 12.8" />
+    </RowIcon>
+  )
+}
+
+export function ReactivateIcon() {
+  return (
+    <RowIcon>
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+    </RowIcon>
+  )
+}
+
+export function KeyIcon() {
+  return (
+    <RowIcon>
+      <path d="M2.59 18.41A2 2 0 0 0 2 19.83V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.17a2 2 0 0 0 1.42-.59l.81-.81a6.5 6.5 0 1 0-4-4Z" />
+      <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
+    </RowIcon>
   )
 }
 
