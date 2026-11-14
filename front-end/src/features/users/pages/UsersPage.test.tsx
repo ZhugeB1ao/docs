@@ -98,7 +98,7 @@ it('removes an inactive row from active results and moves back from an empty fin
   for (let i = 0; i < 2; i++) {
     const table = screen.getByRole('table')
     const button = within(table).getAllByRole('button', {
-      name: 'Deactivate',
+      name: /^Deactivate /,
     })[0]
     await user.click(button)
     const dialog = await screen.findByRole('dialog', {
@@ -109,4 +109,68 @@ it('removes an inactive row from active results and moves back from an empty fin
     await screen.findByText(`${21 - i} accounts`)
   }
   expect(await screen.findByText('Page 1 / 1')).toBeVisible()
+})
+it('searches by username or email and returns to the first page', async () => {
+  const user = userEvent.setup()
+  await renderAccountRoute()
+  await user.click(screen.getByRole('button', { name: 'Next page' }))
+  expect(await screen.findByText('Page 2 / 3')).toBeVisible()
+  await user.type(screen.getByLabelText('Search accounts'), 'staff0')
+  expect(await screen.findByText('9 accounts')).toBeVisible()
+  expect(screen.getByText('Page 1 / 1')).toBeVisible()
+})
+it('does not call the API for each keystroke', async () => {
+  const keywords: (string | null)[] = []
+  featureServer.use(
+    http.get('http://localhost/api/accounts', ({ request }) => {
+      keywords.push(new URL(request.url).searchParams.get('keyword'))
+      return HttpResponse.json({
+        content: [],
+        page: 0,
+        size: 10,
+        totalElements: keywords.length,
+        totalPages: 1,
+      })
+    }),
+  )
+  const user = userEvent.setup()
+  await renderAccountRoute()
+  const initial = keywords.length
+  await user.type(screen.getByLabelText('Search accounts'), 'staff01')
+  await waitFor(() => expect(keywords.length).toBe(initial + 1))
+  expect(keywords.at(-1)).toBe('staff01')
+})
+it('treats a whitespace-only keyword as no filter', async () => {
+  const keywords: (string | null)[] = []
+  featureServer.use(
+    http.get('http://localhost/api/accounts', ({ request }) => {
+      keywords.push(new URL(request.url).searchParams.get('keyword'))
+      return HttpResponse.json({
+        content: [],
+        page: 0,
+        size: 10,
+        totalElements: 28,
+        totalPages: 3,
+      })
+    }),
+  )
+  const user = userEvent.setup()
+  await renderAccountRoute()
+  const initial = keywords.length
+  await user.type(screen.getByLabelText('Search accounts'), '   ')
+  await new Promise((r) => setTimeout(r, 500))
+  expect(keywords.length).toBe(initial)
+  expect(keywords.every((k) => k === null)).toBe(true)
+})
+it('clears the search box with Clear filters and explains an empty result', async () => {
+  const user = userEvent.setup()
+  await renderAccountRoute()
+  const box = screen.getByLabelText('Search accounts')
+  await user.type(box, 'zzzz')
+  expect(
+    await screen.findByText('No accounts match your filters.'),
+  ).toBeVisible()
+  await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+  expect(box).toHaveValue('')
+  expect(await screen.findByText('28 accounts')).toBeVisible()
 })

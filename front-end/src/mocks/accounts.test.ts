@@ -46,6 +46,24 @@ it('pages from zero, filters by department/role/active and reports totals', asyn
   ).rejects.toMatchObject({ response: { status: 400 } })
 })
 
+it('filters accounts by keyword on username or email, ignoring case', async () => {
+  await login()
+  const staff = await api.get('/accounts', { params: { keyword: 'STAFF0' } })
+  expect(staff.data.totalElements).toBe(9)
+  const other = await api.get('/accounts', {
+    params: { keyword: ' other@demo ' },
+  })
+  expect(
+    other.data.content.map((a: { username: string }) => a.username),
+  ).toEqual(['other'])
+  const withRole = await api.get('/accounts', {
+    params: { keyword: 'demo.test', role: 'ADMIN' },
+  })
+  expect(
+    withRole.data.content.every((a: { role: string }) => a.role === 'ADMIN'),
+  ).toBe(true)
+})
+
 it('only lets ADMIN manage accounts, while /accounts/me works for everyone', async () => {
   await login('employee')
   await expect(api.get('/accounts')).rejects.toMatchObject({

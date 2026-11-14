@@ -63,6 +63,25 @@ it('sends the account-service query, status and password-reset payloads', async 
   ).toBeUndefined()
   expect(reset).toEqual({ tempPassword: 'New12345!' })
 })
+it('sends keyword and omits it when undefined', async () => {
+  let query: Record<string, string> = {}
+  server.use(
+    http.get('http://localhost/api/accounts', ({ request }) => {
+      query = Object.fromEntries(new URL(request.url).searchParams)
+      return HttpResponse.json({
+        content: [],
+        page: 0,
+        size: 10,
+        totalElements: 0,
+        totalPages: 0,
+      })
+    }),
+  )
+  await usersApi.list({ page: 0, size: 10, keyword: 'staff' })
+  expect(query.keyword).toBe('staff')
+  await usersApi.list({ page: 0, size: 10 })
+  expect('keyword' in query).toBe(false)
+})
 it('cancels a request that has already been aborted', async () => {
   const controller = new AbortController()
   controller.abort()

@@ -6,7 +6,7 @@ import { renderAccountRoute } from '../../../test/userFeature.tsx'
 it('creates an account and keeps the form input after a duplicate email conflict', async () => {
   const user = userEvent.setup()
   await renderAccountRoute()
-  await user.click(screen.getByRole('button', { name: 'Create account' }))
+  await user.click(screen.getByRole('button', { name: '+ Create account' }))
   const dialog = within(
     await screen.findByRole('dialog', { name: 'Create account' }),
   )
@@ -32,7 +32,7 @@ it('creates an account and keeps the form input after a duplicate email conflict
 it('validates required fields and confirmation before sending a create request', async () => {
   const user = userEvent.setup()
   await renderAccountRoute()
-  await user.click(screen.getByRole('button', { name: 'Create account' }))
+  await user.click(screen.getByRole('button', { name: '+ Create account' }))
   const dialog = within(
     await screen.findByRole('dialog', { name: 'Create account' }),
   )
@@ -44,7 +44,7 @@ it('edits an account without password fields and with a read-only username', asy
   const user = userEvent.setup()
   await renderAccountRoute()
   const row = await screen.findByRole('row', { name: /employee@demo.test/ })
-  await user.click(within(row).getByRole('button', { name: 'Edit' }))
+  await user.click(within(row).getByRole('button', { name: /^Edit / }))
   const dialog = within(
     await screen.findByRole('dialog', { name: 'Edit account' }),
   )

@@ -701,6 +701,7 @@ export const coreHandlers = [
     const departmentId = query.get('departmentId')
     const role = query.get('role')
     const active = query.get('active')
+    const keyword = query.get('keyword')?.trim().toLowerCase()
     if (
       !Number.isSafeInteger(page) ||
       page < 0 ||
@@ -715,7 +716,10 @@ export const coreHandlers = [
       (a) =>
         (!departmentId || a.departmentId === Number(departmentId)) &&
         (!role || a.role === role) &&
-        (!active || a.active === (active === 'true')),
+        (!active || a.active === (active === 'true')) &&
+        (!keyword ||
+          a.username.toLowerCase().includes(keyword) ||
+          a.email.toLowerCase().includes(keyword)),
     )
     return HttpResponse.json({
       content: matches.slice(page * size, (page + 1) * size),

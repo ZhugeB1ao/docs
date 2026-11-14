@@ -12,7 +12,7 @@ it('cancels without disabling and confirms the real lifecycle operation', async 
   const user = userEvent.setup()
   await renderAccountRoute()
   const row = await screen.findByRole('row', { name: /employee@demo.test/ })
-  const trigger = within(row).getByRole('button', { name: 'Deactivate' })
+  const trigger = within(row).getByRole('button', { name: /^Deactivate / })
   await user.click(trigger)
   const dialog = within(
     await screen.findByRole('dialog', { name: 'Deactivate account' }),
@@ -30,7 +30,7 @@ it('cancels without disabling and confirms the real lifecycle operation', async 
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   const updated = await screen.findByRole('row', { name: /employee@demo.test/ })
   expect(
-    within(updated).getByRole('button', { name: 'Reactivate' }),
+    within(updated).getByRole('button', { name: /^Reactivate / }),
   ).toBeVisible()
   await expect(
     authHttp.post('/auth/login', {
@@ -45,7 +45,7 @@ it('requires matching passwords for reset and accepts only the new password afte
   await user.click(
     within(
       await screen.findByRole('row', { name: /employee@demo.test/ }),
-    ).getByRole('button', { name: 'Reset password' }),
+    ).getByRole('button', { name: /^Reset password / }),
   )
   const dialog = within(
     await screen.findByRole('dialog', { name: 'Reset password' }),
@@ -89,7 +89,7 @@ it.each([403, 400])(
     await user.click(
       within(
         await screen.findByRole('row', { name: /employee@demo.test/ }),
-      ).getByRole('button', { name: 'Deactivate' }),
+      ).getByRole('button', { name: /^Deactivate / }),
     )
     const dialog = within(await screen.findByRole('dialog'))
     await user.click(dialog.getByRole('button', { name: 'Confirm' }))
@@ -124,7 +124,7 @@ it('sends only one mutation when confirmation is clicked twice rapidly', async (
   await user.click(
     within(
       await screen.findByRole('row', { name: /employee@demo.test/ }),
-    ).getByRole('button', { name: 'Deactivate' }),
+    ).getByRole('button', { name: /^Deactivate / }),
   )
   await user.dblClick(
     within(await screen.findByRole('dialog')).getByRole('button', {

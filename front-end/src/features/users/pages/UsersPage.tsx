@@ -17,8 +17,23 @@ import type {
 } from '../types.ts'
 import UserFormDialog from '../components/UserFormDialog.tsx'
 import UserActionDialog from '../components/UserActionDialog.tsx'
+import {
+  CrudHeader,
+  CrudRowActions,
+  CrudToolbar,
+} from '../../../shared/components/CrudPageLayout.tsx'
+import {
+  crudFilterClassName,
+  crudRowIconClassName,
+} from '../../../shared/components/crudStyles.ts'
+import { KeyIcon } from '../../../shared/components/Icons.tsx'
 
 const initialQuery: AccountQuery = { page: 0, size: 10 }
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'true', label: 'Active only' },
+  { value: 'false', label: 'Inactive only' },
+]
 export default function UsersPage() {
   const { user } = useAuth()
   const [query, setQuery] = useState<AccountQuery>(initialQuery)
@@ -35,7 +50,20 @@ export default function UsersPage() {
     | { action: UserAction; account: ManagedAccount }
     | null
   >(null)
+  const [searchText, setSearchText] = useState('')
   const generation = useRef(0)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const keyword = searchText.trim().slice(0, 254) || undefined
+      setQuery((previous) =>
+        previous.keyword === keyword
+          ? previous
+          : { ...previous, keyword, page: 0 },
+      )
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchText])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -88,83 +116,74 @@ export default function UsersPage() {
   const pages = Math.max(1, result?.totalPages ?? 1)
 
   return (
-    <section className="management-page" aria-labelledby="users-heading">
-      <div className="management-heading">
-        <div>
-          <p className="management-eyebrow">SYSTEM ADMINISTRATION</p>
-          <h1 id="users-heading">Account management</h1>
-          <p className="text-muted">
-            Manage account details, access permissions and status.
-          </p>
-        </div>
-        <Button onClick={() => setDialog({ action: 'edit', account: null })}>
-          Create account
-        </Button>
-      </div>
-      <div className="management-filters">
-        <div className="user-field">
-          <label htmlFor="filter-department">Filter by department</label>
-          <Select
-            id="filter-department"
-            value={query.departmentId ?? ''}
-            onChange={(e) =>
-              filter({
-                departmentId: e.target.value
-                  ? Number(e.target.value)
-                  : undefined,
-              })
-            }
+    <section className="p-6 sm:p-10">
+      <CrudHeader
+        title="Account management"
+        createLabel="+ Create account"
+        onCreate={() => setDialog({ action: 'edit', account: null })}
+      />
+      <CrudToolbar
+        search={searchText}
+        onSearchChange={setSearchText}
+        searchAriaLabel="Search accounts"
+        statusFilter={query.active === undefined ? '' : String(query.active)}
+        onStatusFilterChange={(value) =>
+          filter({ active: value ? value === 'true' : undefined })
+        }
+        statusOptions={statusOptions}
+        resultCount={result?.totalElements ?? 0}
+        resultNoun={['account', 'accounts']}
+        extraFilters={
+          <>
+            <Select
+              value={query.departmentId ?? ''}
+              onChange={(e) =>
+                filter({
+                  departmentId: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
+              }
+              aria-label="Filter by department"
+              className={crudFilterClassName}
+            >
+              <option value="">All departments</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} ({d.code}){!d.isActive ? ' (inactive)' : ''}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={query.role ?? ''}
+              onChange={(e) =>
+                filter({
+                  role: (e.target.value || undefined) as AccountQuery['role'],
+                })
+              }
+              aria-label="Filter by role"
+              className={crudFilterClassName}
+            >
+              <option value="">All roles</option>
+              <option value="ADMIN">Admin</option>
+              <option value="MANAGER">Manager</option>
+              <option value="EMPLOYEE">Employee</option>
+            </Select>
+          </>
+        }
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSearchText('')
+              setQuery(initialQuery)
+            }}
+            className="!min-h-[38px] !py-1.5 !text-sm"
           >
-            <option value="">All departments</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.code}){!d.isActive ? ' (inactive)' : ''}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="user-field">
-          <label htmlFor="filter-role">Filter by role</label>
-          <Select
-            id="filter-role"
-            value={query.role ?? ''}
-            onChange={(e) =>
-              filter({
-                role: (e.target.value || undefined) as AccountQuery['role'],
-              })
-            }
-          >
-            <option value="">All roles</option>
-            <option value="ADMIN">Admin</option>
-            <option value="MANAGER">Manager</option>
-            <option value="EMPLOYEE">Employee</option>
-          </Select>
-        </div>
-        <div className="user-field">
-          <label htmlFor="filter-status">Filter by status</label>
-          <Select
-            id="filter-status"
-            value={query.active === undefined ? '' : String(query.active)}
-            onChange={(e) =>
-              filter({
-                active: e.target.value ? e.target.value === 'true' : undefined,
-              })
-            }
-          >
-            <option value="">All statuses</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </Select>
-        </div>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setQuery(initialQuery)
-          }}
-        >
-          Clear filters
-        </Button>
-      </div>
+            Clear filters
+          </Button>
+        }
+      />
       {optionsError && (
         <div className="management-notice" role="alert">
           {optionsError}{' '}
@@ -190,146 +209,130 @@ export default function UsersPage() {
         </div>
       ) : (
         <div aria-busy={loading}>
-          {loading ? (
-            <p role="status" className="management-empty">
-              Loading accounts…
-            </p>
-          ) : (
-            <>
-              <p className="management-count" role="status">
-                {result?.totalElements ?? 0}{' '}
-                {result?.totalElements === 1 ? 'account' : 'accounts'}
-              </p>
-              {result?.content.length ? (
-                <div
-                  className="management-table-scroll"
-                  role="region"
-                  aria-label="Accounts table"
-                  tabIndex={0}
-                >
-                  <table className="management-table">
-                    <caption className="sr-only">Account list</caption>
-                    <thead>
-                      <tr>
-                        {[
-                          'Account',
-                          'Department',
-                          'Position',
-                          'Role',
-                          'Status',
-                          'Actions',
-                        ].map((name) => (
-                          <th key={name} scope="col">
-                            {name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.content.map((account) => {
-                        const self = String(account.id) === user?.id
-                        return (
-                          <tr key={account.id}>
-                            <td>
-                              <strong>{account.username}</strong>
-                              <span className="account-email">
-                                {account.email}
-                              </span>
-                              {self && (
-                                <span className="text-muted text-xs">
-                                  Your account
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              {departments.find(
-                                (d) => d.id === account.departmentId,
-                              )?.name ??
-                                account.departmentId ??
-                                'Not assigned'}
-                            </td>
-                            <td>{account.position ?? 'Not assigned'}</td>
-                            <td>{account.role}</td>
-                            <td>
-                              <span
-                                className={`account-status account-status--${account.active ? 'active' : 'inactive'}`}
+          <div className="overflow-x-auto rounded-xl border border-[#292929]/80 bg-[#121212]/30">
+            <table className="data-table" aria-label="Accounts table">
+              <thead>
+                <tr>
+                  <th scope="col">Account</th>
+                  <th scope="col">Department</th>
+                  <th scope="col">Position</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="text-center py-10 text-[#8e8e8e]"
+                    >
+                      Loading accounts…
+                    </td>
+                  </tr>
+                ) : !result?.content.length ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="text-center py-10 text-[#8e8e8e]"
+                    >
+                      {query.role ||
+                      query.active !== undefined ||
+                      query.keyword ||
+                      query.departmentId
+                        ? 'No accounts match your filters.'
+                        : 'No accounts yet.'}
+                    </td>
+                  </tr>
+                ) : (
+                  result.content.map((account) => {
+                    const self = String(account.id) === user?.id
+                    return (
+                      <tr
+                        key={account.id}
+                        className={`transition-colors hover:bg-[#1e1e1e]/40 ${
+                          !account.active ? 'row-inactive' : ''
+                        }`}
+                      >
+                        <td>
+                          <span className="font-medium text-[#f5f5f5]">
+                            {account.username}
+                          </span>
+                          <span className="block text-xs text-[#a3a3a3] break-all">
+                            {account.email}
+                          </span>
+                          {self && (
+                            <span className="block text-xs text-[#8e8e8e]">
+                              Your account
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {departments.find(
+                            (d) => d.id === account.departmentId,
+                          )?.name ??
+                            account.departmentId ??
+                            'Not assigned'}
+                        </td>
+                        <td>{account.position ?? 'Not assigned'}</td>
+                        <td className="text-xs">{account.role}</td>
+                        <td>{account.active ? 'Active' : 'Inactive'}</td>
+                        <td className="text-right">
+                          <CrudRowActions
+                            itemName={account.username}
+                            isActive={account.active}
+                            onEdit={() =>
+                              setDialog({ action: 'edit', account })
+                            }
+                            onDeactivate={() =>
+                              setDialog({ action: 'deactivate', account })
+                            }
+                            onReactivate={() =>
+                              setDialog({ action: 'activate', account })
+                            }
+                            statusDisabledReason={
+                              self
+                                ? 'You cannot deactivate your own account'
+                                : undefined
+                            }
+                          >
+                            {self ? (
+                              <Link
+                                to="/change-password"
+                                aria-label="Change my password"
+                                title="Change my password"
+                                className={`button button--icon ${crudRowIconClassName}`}
                               >
-                                {account.active ? 'Active' : 'Inactive'}
-                              </span>
-                            </td>
-                            <td>
-                              <div className="account-actions">
-                                <Button
-                                  variant="secondary"
-                                  onClick={() =>
-                                    setDialog({ action: 'edit', account })
-                                  }
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  disabled={self}
-                                  title={
-                                    self
-                                      ? 'You cannot deactivate your own account'
-                                      : undefined
-                                  }
-                                  onClick={() =>
-                                    setDialog({
-                                      action: account.active
-                                        ? 'deactivate'
-                                        : 'activate',
-                                      account,
-                                    })
-                                  }
-                                >
-                                  {account.active ? 'Deactivate' : 'Reactivate'}
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  disabled={self}
-                                  title={
-                                    self
-                                      ? 'Use the change password page for your own account'
-                                      : undefined
-                                  }
-                                  onClick={() =>
-                                    setDialog({
-                                      action: 'resetPassword',
-                                      account,
-                                    })
-                                  }
-                                >
-                                  Reset password
-                                </Button>
-                                {self && (
-                                  <Link
-                                    className="text-link"
-                                    to="/change-password"
-                                  >
-                                    Change my password
-                                  </Link>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="management-empty">
-                  {query.role ||
-                  query.active !== undefined ||
-                  query.departmentId
-                    ? 'No accounts match your filters.'
-                    : 'No accounts yet.'}
-                </p>
-              )}
-            </>
-          )}
+                                <KeyIcon />
+                              </Link>
+                            ) : (
+                              <Button
+                                variant="icon"
+                                aria-label={`Reset password ${account.username}`}
+                                title={`Reset password ${account.username}`}
+                                onClick={() =>
+                                  setDialog({
+                                    action: 'resetPassword',
+                                    account,
+                                  })
+                                }
+                                className={crudRowIconClassName}
+                              >
+                                <KeyIcon />
+                              </Button>
+                            )}
+                          </CrudRowActions>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
           <div className="management-pagination">
             <div className="user-field">
               <label htmlFor="page-size">Rows per page</label>

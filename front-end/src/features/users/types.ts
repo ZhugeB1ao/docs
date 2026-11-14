@@ -30,6 +30,8 @@ export interface AccountQuery {
   departmentId?: number
   role?: Role
   active?: boolean
+  /** Matches username or email, case-insensitive. Omit when empty. */
+  keyword?: string
 }
 /** Mirrors `PageResponseAccountResponse`. */
 export interface AccountPageResult {
